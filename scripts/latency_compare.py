@@ -3,7 +3,6 @@ import json
 import time
 from pathlib import Path
 
-import numpy as np
 import onnxruntime as ort
 import torch
 from PIL import Image

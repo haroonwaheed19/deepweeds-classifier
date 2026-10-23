@@ -1,0 +1,10 @@
+.venv
+data
+runs
+reports
+notebooks
+docs
+tests
+.git
+*.pt
+*.npz

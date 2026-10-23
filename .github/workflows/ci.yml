@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Lint
+        run: ruff check .
+      - name: Tests
+        run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Stage the serving image context
+        run: python scripts/publish_hf.py space --stage-only --out build/space
+      - name: Build image (downloads the pinned model and checks its sha256)
+        run: docker build -t deepweeds-service build/space
+      - name: Run container and smoke-test it
+        run: |
+          docker run -d --name svc -p 7860:7860 deepweeds-service
+          pip install requests
+          python scripts/smoke_test.py --url http://localhost:7860 --wait 90
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs svc

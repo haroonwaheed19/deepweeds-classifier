@@ -13,3 +13,4 @@ runs/
 .env
 *.egg-info/
 *.npz
+build/
