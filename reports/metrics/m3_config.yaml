@@ -1,0 +1,22 @@
+_run_dir: runs\m3_mobilenet_ft
+data_config: configs/data.yaml
+imbalance: weights
+model:
+  img_size: 224
+  name: mobilenet_v3_large
+  pretrained: true
+  unfreeze_last: 8
+name: mobilenet_v3_large_ft
+norm: imagenet
+seed: 42
+train:
+  backbone_lr_mult: 0.1
+  batch_size: 32
+  epochs: 8
+  label_smoothing: 0.1
+  lr: 0.001
+  patience: 3
+  subset_fraction: 1.0
+  threads: 3
+  warmup_head_epochs: 1
+  weight_decay: 0.0001

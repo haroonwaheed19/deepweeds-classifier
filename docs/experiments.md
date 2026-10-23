@@ -216,3 +216,48 @@ ImageNet normalisation, weighted loss, label smoothing 0.1, backbone LR = 0.1 x 
 - Unfreezing 4 -> 8 blocks cost only +0.5 min/epoch on the 30% subset (2.8 -> 3.3). Backward
   only runs through the unfrozen stages; the frozen early stages still pay their forward cost.
 - Full run (all 12,280 train images, lr 1e-3, last 8, 8 epochs, patience 3) started.
+
+## 2026-10-23: P4 M3 fine-tuned MobileNetV3-Large, full run (validation; test still untouched)
+
+Config `reports/metrics/m3_config.yaml`: 224px, ImageNet norm, weighted loss, label smoothing 0.1,
+head lr 1e-3 / backbone 1e-4, cosine, epoch 0 head-only then last 8 of 17 backbone blocks
+unfrozen (1.24M trainable in the head-only epoch, 4.09M of 4.21M total once 8 blocks are unfrozen), all 12,280 train images, 8 epochs, ~10 min/epoch
+(head-only epoch 6 min). No early stop. Curve in `reports/metrics/m3_training_curve.csv`.
+
+| | val macro-F1 | val acc | weed recall | false alarm |
+|---|---|---|---|---|
+| M0 majority | 0.076 | 0.523 | 0.00 | 0.00 |
+| M1 small CNN (scratch) | 0.558 | 0.591 | 0.90 | 0.46 |
+| M2 probe (EfficientNet-B0, frozen) | 0.706 | 0.759 | 0.81 | 0.18 |
+| **M3 fine-tuned MobileNetV3-L** | **0.801** | 0.836 | 0.93 | 0.17 |
+| M3 + temperature + Negative bias | **0.816** | 0.857 | 0.85 | 0.08 |
+
+Val macro-F1 was still climbing at epoch 8 (0.711, 0.759, 0.761, 0.770, 0.780, 0.795, 0.801 from
+epoch 1), so 8 epochs under-trains this model a little. I kept the run as is: it already
+answers "does fine-tuning beat the probe enough to justify the cost" (+9.5 macro-F1 points).
+More epochs is the first thing I'd buy with more compute.
+
+**Calibration** (fit on val logits only, `scripts/calibrate.py`, `reports/metrics/calibration.json`):
+- Temperature T = 0.72. Below 1, so the model is *under*-confident (label smoothing and class
+  weights flatten the softmax). ECE 0.107 -> 0.017. Reliability plot: `reports/figures/reliability_val.png`.
+- Negative-logit bias +1.8 (applied after dividing by T). Weighted training makes the model
+  trigger-happy on weeds; the bias moves the operating point: macro-F1 0.801 -> 0.816, false alarms
+  17% -> 7.7%, but weed recall 93% -> 85%. The curve is flat between bias 0.4 and 2.8
+  (macro-F1 0.804-0.812) so the exact value isn't fragile; the choice is really recall vs
+  wasted spray. The API returns `weed_probability` so a client can pick its own threshold.
+  ECE after the bias is 0.034 (bias slightly de-calibrates, accepted).
+- "Uncertain" flag: confidence < 0.619, chosen so predictions above it are 90% accurate on val;
+  it flags ~10% of images (10.7% on a 300-image sample through the ONNX predictor).
+  Tried a 0.85 accuracy target first: threshold came out at 0.23 and flagged nothing, because
+  overall accuracy already exceeds 0.85, so a stricter target was needed to be useful.
+
+**Per-class val F1 (after calibration):** Parkinsonia 0.93, Siam weed 0.93, Lantana 0.91,
+Negative 0.90, Snake weed 0.87, Rubber vine 0.85, Chinee apple 0.76, **Prickly acacia 0.63,
+Parthenium 0.57**. Same two classes were also the weakest for the scratch CNN, so it is not
+a model-capacity issue. To investigate in P5 (both have few capture dates: 6 and 3, and a blue-grey
+colour cast).
+
+**Export check.** ONNX export (opset 17) matches PyTorch to 6.7e-6 max abs logit difference.
+File is 16.8 MB. The torch-free `Predictor` agrees with the PyTorch pipeline on 300/300 val
+images (same temperature/bias), 9 ms per image on this CPU (`artifacts/model_card.json`
+holds T, bias, threshold, normalisation, classes).
