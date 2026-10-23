@@ -1,0 +1,6 @@
+{
+  "threads": 2,
+  "torch_forward_ms": 22.8,
+  "onnx_forward_ms": 6.9,
+  "predictor_end_to_end_ms": 8.5
+}
