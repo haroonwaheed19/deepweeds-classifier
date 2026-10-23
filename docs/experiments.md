@@ -190,6 +190,6 @@ predicted 3.9 for training alone; validation adds ~0.5). Best epoch 15 (`reports
   appearance (blue-grey cast for Parthenium/Prickly acacia), so a model trained from scratch has
   little to go on beyond colour and texture.
 - Training was noisy: val loss swung 1.1-2.1 between epochs, because lr 3e-3 is aggressive for
-  a BatchNorm network on a 4-core CPU batch of 64, and validation images come from different
+  a BatchNorm network with batches of 64, and validation images come from different
   sessions than the training ones. Macro-F1 still trended up (0.26 -> 0.56) with no early stop. I did not
   chase more epochs: the question M1 had to answer is "does scratch training compete?", and it doesn't.
