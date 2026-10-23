@@ -44,6 +44,7 @@ def main() -> None:
     ap.add_argument("--run", required=True, help="run dir containing best.pt")
     ap.add_argument("--out", default="artifacts")
     ap.add_argument("--temperature", type=float, default=1.0)
+    ap.add_argument("--negative-bias", type=float, default=0.0)
     ap.add_argument("--uncertain-threshold", type=float, default=0.0)
     ap.add_argument("--version", default="v1")
     args = ap.parse_args()
@@ -67,7 +68,8 @@ def main() -> None:
     card = {
         "model_version": args.version, "architecture": cfg["model"]["name"], "input_size": size,
         "mean": mean, "std": std, "classes": CLASS_NAMES, "negative_index": 8,
-        "temperature": args.temperature, "uncertain_threshold": args.uncertain_threshold,
+        "temperature": args.temperature, "negative_logit_bias": args.negative_bias,
+        "uncertain_threshold": args.uncertain_threshold,
         "val_macro_f1": ck.get("val_macro_f1"), "onnx_parity_max_abs_diff": diff,
     }
     (out / "model_card.json").write_text(json.dumps(card, indent=2))

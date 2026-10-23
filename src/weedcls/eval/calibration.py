@@ -59,3 +59,45 @@ def reliability_plot(probs_before, probs_after, y, path, n_bins: int = 10) -> No
     fig.tight_layout()
     fig.savefig(path, dpi=140)
     plt.close(fig)
+
+
+def fit_negative_bias(logits: np.ndarray, y: np.ndarray, temperature: float = 1.0,
+                      negative: int = 8, grid=None) -> tuple[float, list[dict]]:
+    """Add a constant to the Negative logit (after dividing by T) to rebalance weed vs no-weed.
+
+    Weighted training makes models over-eager to call weeds; this undoes part of it without
+    retraining. Picked by validation macro-F1. Returns (best bias, the whole curve for reporting).
+    """
+    from weedcls.eval.metrics import compute_metrics
+
+    grid = np.linspace(-2.0, 4.0, 61) if grid is None else grid
+    curve = []
+    for b in grid:
+        z = logits / temperature
+        z = z.copy()
+        z[:, negative] += b
+        m = compute_metrics(y, z.argmax(1))
+        curve.append({"bias": round(float(b), 3), "macro_f1": m["macro_f1"],
+                      "weed_recall": m["weed_recall"], "false_alarm_rate": m["false_alarm_rate"]})
+    best = max(curve, key=lambda r: r["macro_f1"])
+    return float(best["bias"]), curve
+
+
+def choose_uncertain_threshold(probs: np.ndarray, y: np.ndarray, target_acc: float = 0.85):
+    """Smallest confidence cut-off whose retained (confident) predictions reach target_acc.
+
+    Returns (threshold, coverage, accuracy_above). If the target is unreachable, returns the
+    cut-off with the best accuracy among those keeping at least 20% of the data.
+    """
+    conf, correct = probs.max(1), (probs.argmax(1) == y)
+    best = None
+    for t in np.unique(np.round(conf, 3)):
+        keep = conf >= t
+        if keep.mean() < 0.2:
+            break
+        acc = correct[keep].mean()
+        if acc >= target_acc:
+            return float(t), float(keep.mean()), float(acc)
+        if best is None or acc > best[2]:
+            best = (float(t), float(keep.mean()), float(acc))
+    return best

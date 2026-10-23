@@ -193,3 +193,26 @@ predicted 3.9 for training alone; validation adds ~0.5). Best epoch 15 (`reports
   a BatchNorm network with batches of 64, and validation images come from different
   sessions than the training ones. Macro-F1 still trended up (0.26 -> 0.56) with no early stop. I did not
   chase more epochs: the question M1 had to answer is "does scratch training compete?", and it doesn't.
+
+## 2026-10-23: P4 fine-tuning sweep, MobileNetV3-Large @224 (30% of train, 3 epochs: 1 head-only + 2 unfrozen)
+
+ImageNet normalisation, weighted loss, label smoothing 0.1, backbone LR = 0.1 x head LR
+(`reports/metrics/finetune_sweep.csv`).
+
+| lr (head) | last N blocks trainable | val macro-F1 | weed recall | false alarm | min/epoch |
+|---|---|---|---|---|---|
+| 1e-3 | **8** | **0.683** | 0.907 | 0.325 | 3.3 |
+| 1e-3 | 4 | 0.662 | 0.928 | 0.418 | 2.8 |
+| 1e-3 | 2 | 0.625 | 0.916 | 0.462 | 2.5 |
+| 3e-4 | 4 | 0.620 | 0.921 | 0.491 | 2.8 |
+| 3e-4 | 2 | 0.595 | 0.918 | 0.554 | 2.5 |
+
+- Both knobs move the same way: higher LR and more unfrozen blocks are better, monotonically.
+  After the first 4 runs the best point was on the edge of the grid, so I added `last 8`, which
+  won again. I stopped there for budget reasons (all-layer training measured 15.6 min/epoch);
+  deeper unfreezing might still help, and I haven't tested it.
+- Only 3 epochs on 3.7k images, so these are far from converged, but they rank the settings.
+  Differences of ~0.02 are within noise; the 0.09 spread from lr 3e-4/last 2 to lr 1e-3/last 8 is not.
+- Unfreezing 4 -> 8 blocks cost only +0.5 min/epoch on the 30% subset (2.8 -> 3.3). Backward
+  only runs through the unfrozen stages; the frozen early stages still pay their forward cost.
+- Full run (all 12,280 train images, lr 1e-3, last 8, 8 epochs, patience 3) started.

@@ -27,6 +27,8 @@ class Predictor:
         self.mean, self.std = card["mean"], card["std"]
         self.temperature = card.get("temperature", 1.0)
         self.uncertain_below = card.get("uncertain_threshold", 0.0)
+        # fitted on validation logits: z/T first, then this offset on the Negative logit
+        self.negative_bias = card.get("negative_logit_bias", 0.0)
         opts = ort.SessionOptions()
         opts.intra_op_num_threads = threads
         self.session = ort.InferenceSession(str(model_path), opts, providers=["CPUExecutionProvider"])
@@ -38,7 +40,9 @@ class Predictor:
 
     def predict(self, images: list[Image.Image], top_k: int = 3) -> list[dict]:
         t0 = time.perf_counter()
-        probs = _softmax(self.logits(images), self.temperature)
+        z = self.logits(images) / self.temperature
+        z[:, self.negative] += self.negative_bias
+        probs = _softmax(z, 1.0)
         per_image_ms = (time.perf_counter() - t0) * 1000 / len(images)
         out = []
         for p in probs:

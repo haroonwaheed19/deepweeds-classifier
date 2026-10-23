@@ -1,0 +1,6 @@
+run,lr,imbalance,unfreeze_last,epochs_run,best_epoch,val_macro_f1,val_acc,val_weed_recall,val_false_alarm,min_per_epoch
+sweep_ft_lr1.0e-3_last8,0.001,weights,8,3,2,0.68325,0.71253,0.90726,0.32526,3.3
+sweep_ft_lr1.0e-3_last4,0.001,weights,4,3,2,0.6622,0.6741,0.92823,0.41777,2.8
+sweep_ft_lr1.0e-3_last2,0.001,weights,2,3,2,0.62446,0.63374,0.91613,0.46182,2.5
+sweep_ft_lr3.0e-4_last4,0.0003,weights,4,3,2,0.62007,0.61991,0.92097,0.49046,2.8
+sweep_ft_lr3.0e-4_last2,0.0003,weights,2,3,2,0.59482,0.57879,0.91774,0.5536,2.5
