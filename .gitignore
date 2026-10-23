@@ -14,3 +14,4 @@ runs/
 *.egg-info/
 *.npz
 build/
+node_modules/

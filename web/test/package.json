@@ -1,0 +1,10 @@
+{
+  "name": "weedcls-web-parity",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test parity.test.mjs" },
+  "devDependencies": {
+    "onnxruntime-node": "1.23.2",
+    "pngjs": "7.0.0"
+  }
+}

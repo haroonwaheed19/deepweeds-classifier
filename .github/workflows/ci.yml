@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: "3.10"
       - name: Stage the serving image context
-        run: python scripts/publish_hf.py space --stage-only --out build/space
+        run: python scripts/publish_hf.py space-docker --stage-only --out build/space
       - name: Build image (downloads the pinned model and checks its sha256)
         run: docker build -t deepweeds-service build/space
       - name: Run container and smoke-test it
@@ -43,3 +43,21 @@ jobs:
       - name: Container logs on failure
         if: failure()
         run: docker logs svc
+
+  web-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Fetch the pinned model
+        run: python scripts/fetch_model.py --out artifacts
+      - name: Browser preprocessing + ONNX output must match the Python reference
+        run: |
+          cd web/test
+          npm ci
+          npm test

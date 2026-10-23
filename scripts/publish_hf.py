@@ -1,8 +1,9 @@
 """Publish to Hugging Face.
 
     python scripts/publish_hf.py model              # upload ONNX + card to a model repo, pin the manifest
-    python scripts/publish_hf.py space              # stage the serving image context and push it to a Space
-    python scripts/publish_hf.py space --stage-only # just build the staging dir (CI uses this)
+    python scripts/publish_hf.py space              # free STATIC Space: in-browser ONNX inference (web/)
+    python scripts/publish_hf.py space-docker       # Docker Space with the FastAPI service (needs HF PRO)
+    python scripts/publish_hf.py space-docker --stage-only   # just build the staging dir (CI uses this)
 
 Needs `hf auth login` (or HF_TOKEN) for the first two forms.
 """
@@ -14,6 +15,25 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "service" / "model_manifest.json"
+STATIC_README = """---
+title: DeepWeeds Classifier
+colorFrom: green
+colorTo: yellow
+sdk: static
+app_file: index.html
+pinned: false
+license: cc-by-4.0
+---
+
+# DeepWeeds classifier
+
+MobileNetV3-Large fine-tuned on the DeepWeeds dataset (8 weed species + Negative). The model runs
+in your browser with ONNX Runtime Web, so the page needs no server and your image never leaves
+your device. Open the app, pick a photo or click a sample.
+
+Code, training and evaluation: see the GitHub repository linked from the project README.
+"""
+
 SPACE_README = """---
 title: DeepWeeds Classifier
 colorFrom: green
@@ -60,6 +80,36 @@ def stage(out: Path) -> Path:
     return out
 
 
+def stage_static(out: Path) -> Path:
+    """Static site = web/ + the model files, with hashes checked against the manifest."""
+    manifest = json.loads(MANIFEST.read_text())
+    for name, want in manifest["files"].items():
+        got = sha256(ROOT / "artifacts" / name)
+        if got != want:
+            raise SystemExit(f"artifacts/{name} does not match the pinned manifest hash")
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    for name in ("index.html", "app.js", "preprocess.js"):
+        shutil.copy(ROOT / "web" / name, out / name)
+    shutil.copytree(ROOT / "web" / "samples", out / "samples")
+    for name in manifest["files"]:
+        shutil.copy(ROOT / "artifacts" / name, out / name)
+    (out / "README.md").write_text(STATIC_README)
+    return out
+
+
+def publish_static(repo: str, out: Path) -> None:
+    from huggingface_hub import HfApi
+
+    staged = stage_static(out)
+    api = HfApi()
+    api.create_repo(repo, repo_type="space", space_sdk="static", exist_ok=True)
+    api.upload_folder(folder_path=str(staged), repo_id=repo, repo_type="space",
+                      commit_message="Deploy DeepWeeds browser app")
+    print(f"space pushed: https://huggingface.co/spaces/{repo}")
+
+
 def publish_model(repo: str) -> None:
     from huggingface_hub import HfApi
 
@@ -98,7 +148,7 @@ def publish_space(repo: str, out: Path) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("target", choices=["model", "space"])
+    ap.add_argument("target", choices=["model", "space", "space-docker"])
     ap.add_argument("--model-repo", help="e.g. username/deepweeds-mobilenetv3-onnx")
     ap.add_argument("--space-repo", help="e.g. username/deepweeds-classifier")
     ap.add_argument("--stage-only", action="store_true")
@@ -108,6 +158,13 @@ if __name__ == "__main__":
         if not a.model_repo:
             raise SystemExit("--model-repo is required")
         publish_model(a.model_repo)
+    elif a.target == "space":
+        if a.stage_only:
+            print(f"staged at {stage_static(Path(a.out))}")
+        else:
+            if not a.space_repo:
+                raise SystemExit("--space-repo is required")
+            publish_static(a.space_repo, Path(a.out))
     elif a.stage_only:
         print(f"staged at {stage(Path(a.out))}")
     else:

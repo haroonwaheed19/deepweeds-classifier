@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepWeeds classifier</title>
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 680px; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
+  h1 { margin-bottom: .25rem; }
+  .muted { color: #555; font-size: .9rem; }
+  button, input[type=file] { font: inherit; margin: .25rem .25rem .25rem 0; }
+  button:disabled { opacity: .5; }
+  #preview { max-width: 100%; max-height: 320px; border-radius: 6px; margin-top: 1rem; display: none; }
+  #verdict { font-size: 1.3rem; margin-top: 1rem; }
+  .warn { color: #a15c00; }
+  pre { background: #f3f3f3; padding: .75rem; border-radius: 6px; overflow-x: auto; font-size: .85rem; }
+  #status { margin: .75rem 0; }
+</style>
+</head>
+<body>
+<h1>DeepWeeds classifier</h1>
+<p class="muted">Upload a top-down photo of ground vegetation. The model answers with one of eight weed species,
+or "Negative" when no target weed is present. Inference runs entirely in your browser
+(ONNX Runtime Web); the image is not uploaded anywhere.</p>
+
+<div id="status">Loading model...</div>
+<input type="file" id="file" accept="image/jpeg,image/png,image/webp" disabled>
+<div>
+  <span class="muted">or try a sample:</span>
+  <button class="sample" data-name="lantana" disabled>Lantana</button>
+  <button class="sample" data-name="siam_weed" disabled>Siam weed</button>
+  <button class="sample" data-name="negative" disabled>Negative</button>
+</div>
+
+<img id="preview" alt="selected image">
+<div id="verdict"></div>
+<pre id="json" hidden></pre>
+
+<p class="muted">Model: MobileNetV3-Large fine-tuned on DeepWeeds, test macro-F1 0.81 (see the project README for the
+evaluation and its limits). Sample images are from the DeepWeeds dataset (Olsen et al., 2019, CC BY 4.0).
+"Low confidence" means the calibrated confidence is under the threshold chosen on validation data.</p>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/ort.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
