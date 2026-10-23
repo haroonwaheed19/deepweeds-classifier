@@ -1,0 +1,267 @@
+{
+  "n_test": 2627,
+  "n_errors": 344,
+  "top_confusions": [
+    {
+      "true": "Parthenium",
+      "pred": "Negative",
+      "n": 86
+    },
+    {
+      "true": "Snake weed",
+      "pred": "Negative",
+      "n": 39
+    },
+    {
+      "true": "Negative",
+      "pred": "Chinee apple",
+      "n": 33
+    },
+    {
+      "true": "Parthenium",
+      "pred": "Prickly acacia",
+      "n": 33
+    },
+    {
+      "true": "Siam weed",
+      "pred": "Negative",
+      "n": 22
+    },
+    {
+      "true": "Lantana",
+      "pred": "Negative",
+      "n": 22
+    },
+    {
+      "true": "Chinee apple",
+      "pred": "Negative",
+      "n": 16
+    },
+    {
+      "true": "Prickly acacia",
+      "pred": "Negative",
+      "n": 16
+    },
+    {
+      "true": "Rubber vine",
+      "pred": "Negative",
+      "n": 9
+    },
+    {
+      "true": "Lantana",
+      "pred": "Chinee apple",
+      "n": 9
+    },
+    {
+      "true": "Lantana",
+      "pred": "Snake weed",
+      "n": 8
+    },
+    {
+      "true": "Snake weed",
+      "pred": "Chinee apple",
+      "n": 8
+    }
+  ],
+  "accuracy_by_date_n>=30": [
+    {
+      "date": "20170906",
+      "n": 156,
+      "acc": 0.205,
+      "classes": 1
+    },
+    {
+      "date": "20170130",
+      "n": 50,
+      "acc": 0.4,
+      "classes": 1
+    },
+    {
+      "date": "20170706",
+      "n": 58,
+      "acc": 0.414,
+      "classes": 4
+    },
+    {
+      "date": "20171109",
+      "n": 44,
+      "acc": 0.795,
+      "classes": 1
+    },
+    {
+      "date": "20170304",
+      "n": 123,
+      "acc": 0.837,
+      "classes": 2
+    },
+    {
+      "date": "20171113",
+      "n": 151,
+      "acc": 0.861,
+      "classes": 1
+    },
+    {
+      "date": "20170727",
+      "n": 121,
+      "acc": 0.893,
+      "classes": 2
+    },
+    {
+      "date": "20180109",
+      "n": 491,
+      "acc": 0.916,
+      "classes": 2
+    },
+    {
+      "date": "20170811",
+      "n": 128,
+      "acc": 0.922,
+      "classes": 1
+    },
+    {
+      "date": "20170920",
+      "n": 167,
+      "acc": 0.94,
+      "classes": 2
+    },
+    {
+      "date": "20170714",
+      "n": 68,
+      "acc": 0.941,
+      "classes": 1
+    },
+    {
+      "date": "20180112",
+      "n": 314,
+      "acc": 0.952,
+      "classes": 1
+    },
+    {
+      "date": "20171218",
+      "n": 210,
+      "acc": 0.971,
+      "classes": 1
+    },
+    {
+      "date": "20170715",
+      "n": 34,
+      "acc": 1.0,
+      "classes": 1
+    },
+    {
+      "date": "20171122",
+      "n": 93,
+      "acc": 1.0,
+      "classes": 1
+    },
+    {
+      "date": "20180322",
+      "n": 374,
+      "acc": 1.0,
+      "classes": 1
+    }
+  ],
+  "accuracy_by_suffix": [
+    {
+      "cam": "0",
+      "n": 251,
+      "acc": 0.641
+    },
+    {
+      "cam": "1",
+      "n": 1035,
+      "acc": 0.887
+    },
+    {
+      "cam": "2",
+      "n": 929,
+      "acc": 0.896
+    },
+    {
+      "cam": "3",
+      "n": 394,
+      "acc": 0.934
+    },
+    {
+      "cam": "4",
+      "n": 18,
+      "acc": 0.222
+    }
+  ],
+  "per_class": {
+    "Chinee apple": {
+      "n": 177,
+      "recall": 0.881
+    },
+    "Lantana": {
+      "n": 159,
+      "recall": 0.748
+    },
+    "Parkinsonia": {
+      "n": 154,
+      "recall": 0.968
+    },
+    "Parthenium": {
+      "n": 156,
+      "recall": 0.205
+    },
+    "Prickly acacia": {
+      "n": 156,
+      "recall": 0.891
+    },
+    "Rubber vine": {
+      "n": 142,
+      "recall": 0.937
+    },
+    "Siam weed": {
+      "n": 158,
+      "recall": 0.861
+    },
+    "Snake weed": {
+      "n": 154,
+      "recall": 0.649
+    },
+    "Negative": {
+      "n": 1371,
+      "recall": 0.962
+    }
+  },
+  "missed_weeds": {
+    "n": 214,
+    "by_class": {
+      "Parthenium": 86,
+      "Snake weed": 39,
+      "Siam weed": 22,
+      "Lantana": 22,
+      "Prickly acacia": 16,
+      "Chinee apple": 16,
+      "Rubber vine": 9,
+      "Parkinsonia": 4
+    }
+  },
+  "false_alarms": {
+    "n": 52,
+    "by_pred": {
+      "Chinee apple": 33,
+      "Snake weed": 6,
+      "Parthenium": 4,
+      "Rubber vine": 3,
+      "Lantana": 3,
+      "Prickly acacia": 2,
+      "Parkinsonia": 1
+    }
+  },
+  "weed_found_wrong_species": {
+    "n": 78,
+    "share_of_weed_images_found": 0.075
+  },
+  "error_confidence_quantiles": {
+    "0.25": 0.579,
+    "0.5": 0.788,
+    "0.75": 0.908
+  },
+  "uncertain_flag_catches_errors": {
+    "share_of_errors_below_0.619": 0.314,
+    "share_of_correct_below_0.619": 0.038
+  }
+}

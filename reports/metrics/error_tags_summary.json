@@ -1,0 +1,98 @@
+{
+  "A": {
+    "n": 15,
+    "share": 0.25,
+    "meaning": "small or sparse weed, missed (weed present but tiny / low contrast in litter)"
+  },
+  "B": {
+    "n": 13,
+    "share": 0.217,
+    "meaning": "weed species confused with another weed species"
+  },
+  "C": {
+    "n": 12,
+    "share": 0.2,
+    "meaning": "non-target look-alike plant (true Negative) called a weed"
+  },
+  "D": {
+    "n": 6,
+    "share": 0.1,
+    "meaning": "harsh shadow, overexposure or colour cast"
+  },
+  "E": {
+    "n": 4,
+    "share": 0.067,
+    "meaning": "no clear weed visible (possible label noise)"
+  },
+  "F": {
+    "n": 10,
+    "share": 0.167,
+    "meaning": "weed clearly visible but called Negative"
+  },
+  "_by_true_class": {
+    "Chinee apple": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 2,
+      "E": 0,
+      "F": 1
+    },
+    "Lantana": {
+      "A": 0,
+      "B": 1,
+      "C": 0,
+      "D": 2,
+      "E": 0,
+      "F": 1
+    },
+    "Negative": {
+      "A": 0,
+      "B": 0,
+      "C": 12,
+      "D": 0,
+      "E": 0,
+      "F": 0
+    },
+    "Parthenium": {
+      "A": 9,
+      "B": 9,
+      "C": 0,
+      "D": 1,
+      "E": 2,
+      "F": 1
+    },
+    "Prickly acacia": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1,
+      "E": 0,
+      "F": 1
+    },
+    "Rubber vine": {
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 0,
+      "F": 0
+    },
+    "Siam weed": {
+      "A": 2,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 0,
+      "F": 2
+    },
+    "Snake weed": {
+      "A": 3,
+      "B": 3,
+      "C": 0,
+      "D": 0,
+      "E": 2,
+      "F": 4
+    }
+  }
+}
