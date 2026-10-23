@@ -67,7 +67,7 @@ async function run(blob) {
       (r.uncertain ? ' <span class="warn">- low confidence</span>' : "");
     $("json").textContent = JSON.stringify(r, null, 2);
     $("json").hidden = false;
-    setStatus(`Done in ${r.latency_ms} ms.`);
+    setStatus(r.latency_ms > 0 ? `Done in ${r.latency_ms} ms.` : "Done.");
     document.body.dataset.result = JSON.stringify(r);
   } catch (e) {
     setStatus(`Error: ${e.message}`, true);
