@@ -54,3 +54,51 @@ blue-grey, Rubber vine bright green), which is another session-shortcut risk.
 holding out whole dates, because for Parkinsonia/Parthenium/Siam weed train and test will share
 a date but not a time block. I will state this limitation in the README instead of claiming
 site-level generalisation.
+
+## 2026-10-23: P2 splits and preprocessing
+
+**First attempt, rejected.** `StratifiedGroupKFold` (6 outer folds for test, 5 inner for val,
+best of 300 seeds) on (date, hour) groups. Result was too lumpy: test came out at 11.6% of the
+data, Parkinsonia had **16** test images and Snake weed 70 val images. A few groups hold 500+
+images, so fold-based balancing can't do better.
+
+**What I use instead.** Whole (date, hour) groups are assigned to train/val/test by hill-climbing
+on the squared deviation of every (split, class) share from 70/15/15 (swap/move moves, 40
+restarts x 6000 steps, best restart kept; `weedcls.data.splits`). 193 groups (195 before merging
+pHash near-duplicate pairs that straddled an hour boundary).
+
+| class | train | val | test |
+|---|---|---|---|
+| Chinee apple | 784 | 164 | 177 |
+| Lantana | 745 | 160 | 159 |
+| Negative | 6373 | 1362 | 1371 |
+| Parkinsonia | 722 | 155 | 154 |
+| Parthenium | 721 | 145 | 156 |
+| Prickly acacia | 750 | 156 | 156 |
+| Rubber vine | 725 | 142 | 142 |
+| Siam weed | 752 | 164 | 158 |
+| Snake weed | 708 | 154 | 154 |
+| **total** | **12280 (70.1%)** | **2602 (14.9%)** | **2627 (15.0%)** |
+
+Every class is 14.1-15.3% of val and test. Groups: 106 train / 55 val / 32 test. Test has only
+32 groups, so its score is noisy; I will put bootstrap CIs on it (P5) rather than trust a point
+estimate.
+
+**Honest limit.** The split keeps hour-long blocks apart, not whole days: 26 dates appear in both
+train and val, 17 in train and test. For the rare classes (Parkinsonia, 2 dates) this means the
+test measures "same fields, different time of day", not "new field". Scores on this split are
+therefore still somewhat optimistic about truly new sites.
+
+**Normalisation.** Train-split channel mean/std = (0.380, 0.394, 0.384) / (0.233, 0.232, 0.230),
+darker than ImageNet (0.485, 0.456, 0.406). Pretrained models keep ImageNet stats (that is what
+their weights expect); the from-scratch CNN uses the dataset stats.
+
+**Augmentation** (`reports/figures/augmentation_examples.png`): random resized crop scale
+0.7-1.0, horizontal flip + random 90 degree rotation (top-down camera, orientation is
+meaningless), colour jitter brightness/contrast 0.3, saturation 0.1, hue 0.02 (hue kept tiny
+because leaf colour is a species cue). The brightest jittered samples look a bit blown out;
+if the training curves show under-fitting I'll lower it to 0.2.
+
+**Imbalance handling, decided now, compared in P3/P4.** Class-weighted cross-entropy with
+inverse-sqrt frequency weights (average weight over samples = 1) versus a
+`WeightedRandomSampler`; the winner is picked by val macro-F1.

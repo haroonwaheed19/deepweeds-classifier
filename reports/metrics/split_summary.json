@@ -1,0 +1,74 @@
+{
+  "per_split_counts": {
+    "train": 12280,
+    "val": 2602,
+    "test": 2627
+  },
+  "per_split_fraction": {
+    "train": 0.7014,
+    "val": 0.1486,
+    "test": 0.15
+  },
+  "class_counts": {
+    "Chinee apple": {
+      "train": 784,
+      "val": 164,
+      "test": 177
+    },
+    "Lantana": {
+      "train": 745,
+      "val": 160,
+      "test": 159
+    },
+    "Negative": {
+      "train": 6373,
+      "val": 1362,
+      "test": 1371
+    },
+    "Parkinsonia": {
+      "train": 722,
+      "val": 155,
+      "test": 154
+    },
+    "Parthenium": {
+      "train": 721,
+      "val": 145,
+      "test": 156
+    },
+    "Prickly acacia": {
+      "train": 750,
+      "val": 156,
+      "test": 156
+    },
+    "Rubber vine": {
+      "train": 725,
+      "val": 142,
+      "test": 142
+    },
+    "Siam weed": {
+      "train": 752,
+      "val": 164,
+      "test": 158
+    },
+    "Snake weed": {
+      "train": 708,
+      "val": 154,
+      "test": 154
+    }
+  },
+  "min_class_fraction_in_val_or_test": 0.1407,
+  "n_groups": 193,
+  "groups_per_split": {
+    "train": 106,
+    "val": 55,
+    "test": 32
+  },
+  "dates_shared_between_splits": {
+    "train&val": 26,
+    "train&test": 17,
+    "val&test": 15
+  },
+  "seed": 15,
+  "search_loss": 0.00079,
+  "grouping": "date+hour, near-duplicate pairs (pHash<=4) merged"
+}
