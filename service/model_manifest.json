@@ -1,8 +1,8 @@
 {
-  "repo": "PENDING",
-  "revision": "PENDING",
+  "repo": "haroonwaheed19/deepweeds-mobilenetv3-onnx",
+  "revision": "bbc0d7adffd620e449e54a2681a0ecda8a0bebaa",
   "files": {
-    "model.onnx": "PENDING",
-    "model_card.json": "PENDING"
+    "model.onnx": "eda245426efa792a2c48de350cf21fba22bee77441d988a9e80c13470fc0ba61",
+    "model_card.json": "10923626c15d3861062c0108ba0da60651f5e6a140619d656cb06111aaa94107"
   }
 }
