@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepWeeds classifier</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
+  img { max-width: 100%; border-radius: 6px; margin-top: 1rem; }
+  pre { background: #f3f3f3; padding: .75rem; border-radius: 6px; overflow-x: auto; }
+  .verdict { font-size: 1.25rem; margin-top: 1rem; }
+  .uncertain { color: #a15c00; }
+</style>
+</head>
+<body>
+<h1>DeepWeeds classifier</h1>
+<p>Upload a top-down photo of ground vegetation. The model returns one of eight weed species or "Negative" (no target weed).
+API docs: <a href="/docs">/docs</a>.</p>
+<input type="file" id="f" accept="image/jpeg,image/png,image/webp">
+<div id="out"></div>
+<script>
+const f = document.getElementById("f"), out = document.getElementById("out");
+f.onchange = async () => {
+  const file = f.files[0];
+  if (!file) return;
+  out.textContent = "Running...";
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const r = await fetch("/predict", { method: "POST", body: fd });
+    const j = await r.json();
+    if (!r.ok) { out.textContent = "Error: " + (j.error || r.status); return; }
+    out.innerHTML = '<img src="' + URL.createObjectURL(file) + '" alt="uploaded image">' +
+      '<div class="verdict">' + j.label + " (" + (j.confidence * 100).toFixed(1) + "%)" +
+      (j.uncertain ? ' <span class="uncertain">- low confidence</span>' : "") + "</div>" +
+      "<pre>" + JSON.stringify(j, null, 2) + "</pre>";
+  } catch (e) { out.textContent = "Request failed: " + e; }
+};
+</script>
+</body>
+</html>

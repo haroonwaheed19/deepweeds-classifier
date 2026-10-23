@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Cheap HP sweep for the fine-tuned MobileNetV3-L: 30% of train, 3 epochs (1 head-only + 2 with
+# the last N blocks unfrozen). Pick by val macro-F1 (scripts/summarize_runs.py).
+set -e
+for lr in 3.0e-4 1.0e-3; do
+  for n in 2 4; do
+    .venv/Scripts/python.exe -m weedcls.train.train --config configs/finetune.yaml \
+      --override train.epochs=3 train.subset_fraction=0.3 train.lr=$lr model.unfreeze_last=$n \
+      --run-name "sweep_ft_lr${lr}_last${n}" --runs-dir runs/sweep_finetune
+  done
+done

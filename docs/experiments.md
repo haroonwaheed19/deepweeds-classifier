@@ -165,3 +165,31 @@ Things worth knowing:
   best LR at 16 epochs.
 - Overall level is low (0.36) after 4 short epochs. The full run uses all training data for up to
   16 epochs.
+
+## 2026-10-23: P3 M1 small CNN from scratch, full run (validation)
+
+0.32M-parameter CNN (4 conv-BN-ReLU-pool blocks + GAP, 128px, dataset normalisation), AdamW lr 3e-3
+with cosine decay, weighted loss, 16 epochs on all 12,280 training images, ~5.2 min/epoch (the benchmark
+predicted 3.9 for training alone; validation adds ~0.5). Best epoch 15 (`reports/metrics/m1_small_cnn_*`).
+
+| | val macro-F1 | val acc | weed recall | false alarm |
+|---|---|---|---|---|
+| M0 majority | 0.076 | 0.523 | 0.00 | 0.00 |
+| **M1 small CNN** | **0.558** | 0.591 | 0.902 | 0.461 |
+| M2 probe (EfficientNet-B0, frozen) | 0.706 | 0.759 | 0.812 | 0.184 |
+
+- **Transfer learning is justified.** Frozen ImageNet features + logistic regression, which costs
+  ~11 minutes of embedding extraction and seconds of fitting, beat a CNN trained for ~80 minutes
+  by 15 macro-F1 points. With 1,000 images per weed class, a scratch model has too little data
+  to learn what a leaf looks like.
+- The CNN's weak spot is false alarms: 46% of Negative images get flagged as weeds (Negative
+  recall 0.54, precision 0.86). Its weighted loss made it trigger-happy; the probe with no
+  weights was more balanced.
+- Per-class F1: Siam weed 0.86 and Lantana 0.68 are fine; Parthenium 0.36, Prickly acacia 0.43,
+  Chinee apple 0.44 are weakest. Those are the ones with the most session-specific
+  appearance (blue-grey cast for Parthenium/Prickly acacia), so a model trained from scratch has
+  little to go on beyond colour and texture.
+- Training was noisy: val loss swung 1.1-2.1 between epochs, because lr 3e-3 is aggressive for
+  a BatchNorm network on a 4-core CPU batch of 64, and validation images come from different
+  sessions than the training ones. Macro-F1 still trended up (0.26 -> 0.56) with no early stop. I did not
+  chase more epochs: the question M1 had to answer is "does scratch training compete?", and it doesn't.
