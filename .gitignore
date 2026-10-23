@@ -12,3 +12,4 @@ runs/
 *.npy
 .env
 *.egg-info/
+*.npz

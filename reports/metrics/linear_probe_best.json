@@ -1,0 +1,18 @@
+{
+  "best": {
+    "backbone": "efficientnet_b0",
+    "C": 0.003,
+    "class_weight": "none",
+    "val_macro_f1": 0.7062972240269362,
+    "val_acc": 0.759031514219831,
+    "val_bal_acc": 0.7085594413880839,
+    "val_weed_recall": 0.8120967741935484,
+    "val_false_alarm": 0.184287812041116,
+    "seconds": 2.5
+  },
+  "grouped_val_macro_f1": 0.7062972240269362,
+  "official_random_val_macro_f1": 0.8056168287702083,
+  "leakage_gap_macro_f1": 0.09931960474327217,
+  "grouped_val_acc": 0.759031514219831,
+  "official_random_val_acc": 0.8508997429305912
+}
