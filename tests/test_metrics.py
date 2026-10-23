@@ -31,3 +31,9 @@ def test_bootstrap_ci_brackets_point_estimate():
     groups = np.repeat(np.arange(30), 20)
     lo, hi = bootstrap_ci(y, pred, groups, n_boot=200)
     assert lo < compute_metrics(y, pred)["macro_f1"] < hi
+
+
+def test_macro_f1_ignores_classes_absent_from_truth():
+    y = np.array([0, 0, 1, 1])
+    m = compute_metrics(y, y)       # classes 2..8 absent everywhere
+    assert m["macro_f1"] == 1.0 and m["balanced_accuracy"] == 1.0
