@@ -1,0 +1,21 @@
+name: mobilenet_v3_large_ft
+seed: 42
+data_config: configs/data.yaml
+norm: imagenet
+imbalance: weights
+model:
+  name: mobilenet_v3_large
+  img_size: 224
+  pretrained: true
+  unfreeze_last: 4        # backbone stages (of 17) that train; head always trains
+train:
+  epochs: 8
+  batch_size: 32
+  lr: 1.0e-3              # head
+  backbone_lr_mult: 0.1   # backbone LR = lr * this
+  weight_decay: 1.0e-4
+  label_smoothing: 0.1
+  warmup_head_epochs: 1   # epoch 0 trains the head only
+  patience: 3
+  threads: 3
+  subset_fraction: 1.0

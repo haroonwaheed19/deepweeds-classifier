@@ -102,3 +102,66 @@ if the training curves show under-fitting I'll lower it to 0.2.
 **Imbalance handling, decided now, compared in P3/P4.** Class-weighted cross-entropy with
 inverse-sqrt frequency weights (average weight over samples = 1) versus a
 `WeightedRandomSampler`; the winner is picked by val macro-F1.
+
+## 2026-10-23: P3 M0 floor and M2 linear probe (all numbers are VALIDATION; test untouched)
+
+**M0, always predict "Negative".** Accuracy 0.523, balanced accuracy 0.111, macro-F1 **0.076**,
+weed recall 0. A model that does nothing gets 52% accuracy, which is why macro-F1 is the
+headline metric here and accuracy is only reported.
+
+**M2, frozen ImageNet features + logistic regression.** Embeddings cached once per backbone
+(MobileNetV3-L ~7 min, EfficientNet-B0 ~11 min on this laptop; the benchmark had predicted 5 and 8,
+the gap is the DataLoader sharing 2 cores). 24 configs (2 backbones x C in {3e-4, 3e-3, 3e-2, 0.3}
+x class weighting {none, inverse-sqrt, balanced}), ~2.5 s per fit
+(`reports/metrics/linear_probe_sweep.csv`).
+
+| | val macro-F1 | val acc | weed recall | false-alarm rate |
+|---|---|---|---|---|
+| best: EfficientNet-B0, C=0.003, no weights | **0.706** | 0.759 | 0.812 | 0.184 |
+| best MobileNetV3-L (C=0.03, no weights) | 0.682 | 0.738 | 0.851 | 0.232 |
+| EfficientNet-B0, C=0.03, balanced weights | 0.655 | 0.670 | 0.930 | 0.413 |
+
+Things worth knowing:
+
+- **Class weighting lowers macro-F1 but raises weed recall.** "Balanced" weights push weed
+  recall to 0.93-0.96 at the cost of a 41-66% false-alarm rate; no weighting sits at 0.81 recall
+  and 18% false alarms. So the choice depends on the cost of a miss vs a wasted spray, not on a
+  single number. For selection I stay with macro-F1 but I'll tune a decision threshold in P4
+  and report the recall/false-alarm trade-off.
+- **EfficientNet-B0 beats MobileNetV3-L by 0.024 macro-F1.** With 55 validation groups that is
+  within what I'd expect from noise, so I'm not reading it as a real ranking. And B0 costs
+  36 min/epoch to fine-tune vs 15.6 (benchmark), which breaks my compute gate. Fine-tuning
+  therefore goes ahead with MobileNetV3-L (decision based on cost, with a small accuracy price).
+- **Leakage gap.** Best config re-scored on the paper's random 60/20/20 split: macro-F1 0.806 and
+  accuracy 0.851, versus 0.706 and 0.759 on the grouped split. A random split overstates
+  performance by about **10 macro-F1 points** for the identical model and features, which is
+  the reason the grouped split exists.
+- Transfer learning is justified before spending any fine-tuning compute: frozen features alone
+  reach 0.71 macro-F1 in seconds; the from-scratch CNN has to beat this to earn its place
+  (result below once trained).
+
+## 2026-10-23: P3 small-CNN sweep (30% of train, 4 epochs each, val macro-F1)
+
+6 runs: lr {1e-3, 3e-3} x imbalance {weighted loss, WeightedRandomSampler, none}
+(`reports/metrics/small_cnn_sweep.csv`; ~2 min/epoch at this subset size).
+
+| lr | imbalance | val macro-F1 | weed recall | false alarm |
+|---|---|---|---|---|
+| 3e-3 | weights | **0.362** | 0.681 | 0.400 |
+| 3e-3 | sampler | 0.360 | 0.820 | 0.558 |
+| 1e-3 | weights | 0.359 | 0.701 | 0.436 |
+| 1e-3 | sampler | 0.342 | 0.738 | 0.553 |
+| 1e-3 | none | 0.304 | 0.365 | 0.139 |
+| 3e-3 | none | 0.271 | 0.336 | 0.121 |
+
+- Weighted loss and sampler tie on macro-F1 (0.362 vs 0.360); the sampler buys recall by paying
+  in false alarms. I'm going with the weighted loss: same score, no resampling of the data.
+- No imbalance handling is clearly worse for this model (0.27-0.30): it drifts to "Negative" and
+  misses ~2/3 of weeds. Note this is the opposite of the linear probe, where weighting cost
+  macro-F1. The probe starts from strong features, so it doesn't need the push; an under-trained
+  CNN does.
+- lr 3e-3 vs 1e-3: 0.003 apart for weights, which I treat as a tie; 3e-3 chosen as the better of
+  the two tested values. These are 4-epoch runs on a subset, so they say little about the
+  best LR at 16 epochs.
+- Overall level is low (0.36) after 4 short epochs. The full run uses all training data for up to
+  16 epochs.
