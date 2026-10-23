@@ -261,3 +261,111 @@ colour cast).
 File is 16.8 MB. The torch-free `Predictor` agrees with the PyTorch pipeline on 300/300 val
 images (same temperature/bias), 9 ms per image on this CPU (`artifacts/model_card.json`
 holds T, bias, threshold, normalisation, classes).
+
+## 2026-10-23: P5 test-set evaluation and error analysis
+
+All thresholds (temperature 0.72, Negative bias +1.8, uncertainty cut-off 0.619) were fit on
+validation. Test = 2,627 images, 32 capture groups. Run via `python -m weedcls.eval.evaluate`;
+95% CIs come from a **group bootstrap** (1000 resamples of whole capture groups, since frames in a
+group are near-copies). The first run printed sklearn warnings: some resamples contain no image of
+a rare class, and my macro-F1 scored that class as 0, biasing the intervals down. I fixed
+`compute_metrics` to average over classes present in the resample and re-ran. Point estimates
+were identical; the same final models were scored twice, nothing was re-tuned in between.
+
+| model | macro-F1 [95% CI] | acc | weed recall | false alarm | params | CPU ms/img |
+|---|---|---|---|---|---|---|
+| M0 majority | 0.076 [0.029, 0.105] | 0.522 | 0.00 | 0.000 | - | - |
+| M1 small CNN (scratch) | 0.584 [0.418, 0.661] | 0.670 | 0.850 | 0.263 | 0.32M | 10 (torch, 128px) |
+| M2 EfficientNet-B0 frozen + LR | 0.710 [0.564, 0.764] | 0.773 | 0.755 | 0.126 | (frozen backbone) | - |
+| M3 fine-tuned MobileNetV3-L, raw | 0.815 [0.663, 0.881] | 0.863 | 0.904 | 0.094 | 4.21M | 29 torch / 9 ONNX |
+| **M3 + temperature + Negative bias (shipped)** | **0.811 [0.659, 0.880]** | 0.869 | 0.830 | 0.038 | 4.21M | 9 (ONNX, 16.8 MB) |
+
+Paired group-bootstrap differences in macro-F1 (same resamples for both models):
+- M3 vs M2: **+0.103 [0.051, 0.162]**; M3 vs M1: **+0.232 [0.157, 0.305]**. Both exclude 0.
+- M3 calibrated vs raw: -0.002 [-0.031, +0.035]. **The +0.015 val gain from the Negative bias did not
+  carry over to test.** It is an operating-point shift (false alarms 9.4% -> 3.8%, weed recall
+  90.4% -> 83.0%), not an accuracy gain, and I will describe it that way.
+- The CI on any single model is wide (M3: 0.66-0.88) because there are only 32 test groups and
+  some classes sit in one or two. Val (0.816) and test (0.811) agree, which is reassuring, but
+  rankings between close models would not be trustworthy at this test size.
+
+Leakage gap (P3, same probe): 0.806 on the paper's random split vs 0.706 on mine: +0.10.
+
+### Where it fails (344 test errors; `reports/metrics/error_breakdown.json`)
+
+- **Parthenium is the main failure.** Test recall 20.5% (val 49%). 86 of the 214 missed weeds are
+  Parthenium; 33 more Parthenium images are called Prickly acacia. All 156 test Parthenium images
+  come from a single session (2017-09-06, 10:00-12:00) and no training Parthenium comes from that
+  date. The split search put that whole session in test.
+- **Session shift is the dominant mechanism, not a Parthenium quirk.** Over all weed test images,
+  species recall is **0.893 when the class's capture date also appears in train (n=847) and 0.509
+  when it doesn't (n=409)**; accuracy CIs [0.85, 0.93] vs [0.27, 0.80]
+  (`reports/metrics/date_shift_analysis.json`). Per class: Lantana 0.96 vs 0.37, Snake weed 0.75 vs
+  0.45, Chinee apple 0.92 vs 0.78, but Rubber vine 0.82 vs 1.00 (93 images), so it is not
+  universal. Caveat: "unseen date" is confounded with class (Parthenium is unseen and also hard),
+  so this is strong evidence, not proof. It also means my hour-level split is optimistic for
+  classes whose test dates overlap train dates (Parkinsonia 0.97, Prickly acacia 0.89): their
+  test sessions share a date with training.
+- **Misses vs false alarms.** 214 weeds called Negative (17% of weed images), 52 Negatives called
+  a weed (3.8%), and only 78 weed images (7.5% of those found) given the wrong species. So the
+  model is much better at "which weed" than at "weed or not" when the weed is subtle.
+- **Confident wrong answers.** Median confidence of an error is 0.79 (quartiles 0.58 / 0.91). The
+  uncertainty flag (< 0.619) catches 31% of errors while flagging 3.8% of correct predictions.
+  Useful, but most errors are confident ones.
+
+Manual failure-mode tagging of 60 randomly sampled errors (`reports/error_tags.csv`, tags assigned
+by eye from `reports/figures/error_sheet_*.png`, so subjective):
+
+| tag | share | meaning |
+|---|---|---|
+| A | 25% (15) | small or sparse weed in leaf litter / dead grass, called Negative (9 are Parthenium) |
+| B | 22% (13) | one weed species confused with another (9 Parthenium -> Prickly acacia/Chinee apple) |
+| C | 20% (12) | true Negative with a non-target look-alike plant called a weed |
+| F | 17% (10) | weed clearly visible but called Negative |
+| D | 10% (6) | harsh shadow, overexposure or colour cast |
+| E | 7% (4) | no clear weed visible (possible label noise) |
+
+Grad-CAM on 12 of these (`reports/figures/gradcam_errors.png`, a small sample): for Parthenium called
+Negative the evidence for "Negative" sits on dead leaves and litter, not on the small plant; for
+weeds called Negative on sand the attention goes to the sand background; for look-alike false
+alarms the model attends to the pinnate leaves themselves, so that one is about class
+definition, not background.
+
+False-alarm cluster: 33 of 52 false alarms are Negatives predicted as Chinee apple, 25 of them from
+one session (2018-01-09, 466 test Negatives, 5.4% of them hit). The training set holds 1,009
+Negatives from that same date, so this is not missing coverage. It is a small share of one
+session whose leaflets look like Chinee apple at this scale.
+
+Suffix `-k` and date accuracy are confounded with class, so I only note: suffix 0 has 64%
+accuracy (n=251, mostly Snake weed), suffix 4 22% (n=18, Parthenium).
+
+### Label noise (train, out-of-fold probe, `reports/metrics/label_noise_oof.json`)
+
+Grouped 5-fold out-of-fold predictions on the 12,280 training images: 282 (2.3%) are confidently
+contradicted (model p > 0.9 for another class; 92 are Negatives). I looked at the 40 most
+contradicted: 7 (17.5%) are likely mislabels (a weed label with no target visible: person's
+shadow, grass only, bare twigs), 13 (32.5%) look right and the model is wrong (often thrown by a
+pink or blue colour cast), 20 (50%) are ambiguous. If the true mislabel share among all 282 is no
+higher than in the top 40, that is under 50 images, **roughly 0.4% of train or less**; the top-40
+is not a random sample so treat that as a loose ceiling. I did not remove or relabel anything:
+the effect is too small to matter next to the session shift. Earlier finding (P1) still stands:
+zero cross-class near-duplicates.
+
+### Improvement hypotheses (each tied to an observation above; none run yet)
+
+1. **Session shift (Parthenium 0.21, unseen-date recall 0.51 vs 0.89).** The model uses session
+   appearance (lighting, colour cast, background) as a shortcut. Try stronger photometric
+   augmentation (larger colour jitter, random grayscale, random shadow) and per-image colour
+   normalisation (grey-world white balance). Test by retraining and reporting recall on the
+   "unseen-date" subset with its CI. Longer-term fix is more sessions per class, which no
+   algorithm replaces.
+2. **Small weed in litter (tag A, 25% of errors).** A 224px resize plus global pooling dilutes a
+   plant that covers a few percent of the frame. Try native 256px input and 2x2 overlapping-crop
+   inference with max-pooling of weed probability. Test on the Parthenium and Snake weed misses.
+3. **Look-alike Negatives (tag C, 20%).** The Negative class is a catch-all. Try hard-negative
+   mining (upweight training Negatives the out-of-fold model gets wrong) or a separate
+   "other plant" class. Expect fewer Negative -> Chinee apple false alarms.
+4. **Operating point.** Weed recall 83% vs 17% missed is a business choice. Sweep the
+   Negative-bias to match a target recall and report the false-alarm cost; the API already
+   exposes `weed_probability`.
+5. **Longer training.** Val macro-F1 was still rising at epoch 8 of the M3 run.

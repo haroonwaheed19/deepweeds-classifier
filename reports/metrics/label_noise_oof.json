@@ -1,0 +1,21 @@
+{
+  "n_train": 12280,
+  "n_confidently_contradicted": 282,
+  "by_label": {
+    "Chinee apple": 14,
+    "Lantana": 17,
+    "Negative": 92,
+    "Parkinsonia": 11,
+    "Parthenium": 42,
+    "Prickly acacia": 11,
+    "Rubber vine": 45,
+    "Siam weed": 30,
+    "Snake weed": 20
+  },
+  "top40_verdicts": {
+    "likely_mislabel_no_target_visible": 7,
+    "label_plausible_model_wrong": 13,
+    "ambiguous": 20
+  },
+  "note": "top 40 by lowest out-of-fold p(true label); not a random sample, so mislabel rate is an upper-ish bound"
+}
