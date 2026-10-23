@@ -369,3 +369,27 @@ zero cross-class near-duplicates.
    Negative-bias to match a target recall and report the false-alarm cost; the API already
    exposes `weed_probability`.
 5. **Longer training.** Val macro-F1 was still rising at epoch 8 of the M3 run.
+
+## 2026-10-23: P6 inference package and REST API
+
+**Design.** `weedcls.inference.predictor.Predictor` needs only onnxruntime, numpy and Pillow (no torch),
+so the serving image stays small. Preprocessing is `weedcls.preprocess.preprocess_pil`, the same
+function the training-side eval transform calls, so the service cannot drift from what the model
+was validated on. Temperature and the Negative bias are applied in the predictor from
+`model_card.json` (z / T, then + bias on the Negative logit, then softmax).
+
+**Checks done with the real model (`artifacts/model.onnx`, 16.8 MB):**
+- PyTorch vs ONNX logits: max abs difference 6.7e-6 (export-time parity check, 8 random inputs).
+- Predictor vs the PyTorch pipeline with the same T/bias on 300 random val images: 300/300 same label.
+- Latency, one image, CPU, 2 threads (`reports/metrics/latency.json`): PyTorch forward 22.8 ms,
+  ONNX Runtime forward 6.9 ms (3.3x faster), full `Predictor.predict` including preprocessing 8.5 ms.
+- Live local calls with real test images: Lantana (0.96), Negative (0.95), Siam weed (0.83) all
+  correct; wrong content type -> 415, undecodable file -> 400, missing field -> 422 (all JSON with a
+  request id), batch of 2 -> 200. The first version returned FastAPI's default 422 body without a
+  request id, which was inconsistent with the other errors, so I added a handler for it.
+
+**API** (`service/app.py`): `GET /health`, `GET /model-info`, `POST /predict` (multipart `file`),
+`POST /predict/batch` (<= 16 files), `GET /` upload page, `/docs` Swagger. Limits: 5 MB, JPEG/PNG/WebP,
+32-6000 px per side. Response carries `label`, `confidence`, `is_weed`, `weed_probability`,
+`uncertain`, `top_k`, `latency_ms`, `model_version`. 5 API tests run against a tiny stand-in ONNX
+model, so CI needs neither the dataset nor the trained weights.

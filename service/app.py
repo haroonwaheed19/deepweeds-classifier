@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image, UnidentifiedImageError
 
@@ -92,6 +93,14 @@ async def request_context(request: Request, call_next):
 async def http_error(request: Request, exc: HTTPException):
     return JSONResponse({"error": exc.detail, "request_id": getattr(request.state, "rid", None)},
                         status_code=exc.status_code)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, exc: RequestValidationError):
+    first = exc.errors()[0] if exc.errors() else {}
+    where = ".".join(str(x) for x in first.get("loc", ()))
+    return JSONResponse({"error": f"invalid request: {first.get('msg', 'bad input')} ({where})",
+                         "request_id": getattr(request.state, "rid", None)}, status_code=422)
 
 
 @app.get("/health")

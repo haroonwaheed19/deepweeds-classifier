@@ -50,3 +50,8 @@ def test_batch_limit(client):
     assert client.post("/predict/batch", files=files).status_code == 400
     ok = client.post("/predict/batch", files=files[:2])
     assert ok.status_code == 200 and len(ok.json()["results"]) == 2
+
+
+def test_missing_file_field_uses_same_error_shape(client):
+    r = client.post("/predict")
+    assert r.status_code == 422 and "error" in r.json() and "request_id" in r.json()
