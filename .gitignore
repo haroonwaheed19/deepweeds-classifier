@@ -11,3 +11,4 @@ runs/
 *.onnx
 *.npy
 .env
+*.egg-info/
